@@ -1,14 +1,38 @@
 import cors from 'cors';
+import { config } from 'dotenv';
 import express, { Application as ExpressApplication } from 'express';
+import { readFileSync } from 'fs';
+import { createServer, Server } from 'https';
 import { join } from 'path';
 
-// sucrase ./src/client -d ./public/js --transforms typescript,imports
-
 class App {
-  public express: ExpressApplication;
+  public express!: ExpressApplication;
+  public server!: Server;
 
   constructor() {
+    config();
+
+    const {
+      SSL_PRIVATE_KEY,
+      SSL_CERTIFICATE,
+      SSL_CA,
+
+      ENVIRONMENT
+    } = process.env;
+
+    const certificate = {
+      key: readFileSync(SSL_PRIVATE_KEY, 'utf-8'),
+      cert: readFileSync(SSL_CERTIFICATE, 'utf-8'),
+      ca: readFileSync(SSL_CA, 'utf-8')
+    };
+
+    const options = ENVIRONMENT === 'production'
+      ? certificate
+      : {};
+
     this.express = express();
+
+    this.server = createServer(options, this.express);
 
     this.middlewares();
     this.routes();
@@ -27,4 +51,4 @@ class App {
   }
 }
 
-export default new App().express;
+export default new App().server;
